@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 class WalletController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * GET /api/wallets
      */
     public function index(Request $request)
     {
@@ -46,11 +46,43 @@ class WalletController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * POST /api/wallets
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+            'currency_code' => 'required|exists:currencies,code',
+        ], [
+            'currency_code.exists' => 'The selected code is invalid.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid field',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $currency = Currency::where('code', $request->currency_code)->first();
+        $wallet = $request->user()->wallets()->create([
+            'name' => $request->name,
+            'currency_id' => $currency->id
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Wallet added successful',
+            'data'    => [
+                'name'          => $wallet->name,
+                'user_id'       => $wallet->user_id,
+                'updated_at'    => $wallet->updated_at,
+                'created_at'    => $wallet->created_at,
+                'id'            => $wallet->id,
+                'currency_code' => $currency->code,
+            ]
+        ], 201);
     }
 
     /**
