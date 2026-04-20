@@ -29,7 +29,7 @@ class AuthController extends Controller
 
         $user = User::create([
             'name' => $request->name,
-            'email'=> $request->email,
+            'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
@@ -38,7 +38,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Registration successful',
-            'data' => array_merge($user->toArray(), ['token'=> $token]),
+            'data' => array_merge($user->toArray(), ['token' => $token]),
         ], 201);
     }
 
@@ -49,22 +49,25 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password')))
-        {
+        // 1. Find the user by email
+        $user = User::where('email', $request->email)->first();
+
+        // 2. Check if user exists and the password matches
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'status'=> 'error',
-                'message'=> 'Username or password incorrect'
+                'status'  => 'error',
+                'message' => 'Username or password incorrect'
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->first();
+        // 3. Create the Sanctum token
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'status' => 'success',
-            'message'=> 'Login successful',
-            'data' => array_merge($user->toArray(), ['token'=> $token]),
-        ], 201);
+            'status'  => 'success',
+            'message' => 'Login successful',
+            'data'    => array_merge($user->toArray(), ['token' => $token]),
+        ], 200);
     }
 
     public function logout(Request $request)
@@ -73,7 +76,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message'=> 'Logout successful',
+            'message' => 'Logout successful',
         ], 201);
     }
 }
