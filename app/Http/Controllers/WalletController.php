@@ -88,9 +88,38 @@ class WalletController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $id, Request $request)
     {
-        //
+        $wallet = Wallet::with('currency')->find($id);
+
+        if (!$wallet) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Not Found'
+            ], 404);
+        }
+
+        if ($wallet->user_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden Access',
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Get detail wallet successful',
+            'data' => [
+                'id'            => $wallet->id,
+                'user_id'       => $wallet->user_id,
+                'name'          => $wallet->name,
+                'updated_at'    => $wallet->updated_at,
+                'created_at'    => $wallet->created_at,
+                'deleted_at'    => $wallet->deleted_at,
+                'currency_code' => $wallet->currency->code ?? null,
+                'balance' => $this->calculateBalance($wallet),
+            ]
+        ], 200);
     }
 
     /**
